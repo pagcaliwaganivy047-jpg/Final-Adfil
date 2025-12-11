@@ -4,21 +4,20 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Item;
 use App\Models\Transaction;
-use Illuminate\Http\Request;
 use App\Models\SupplierRecord;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
 class ItemController extends Controller
 {
-    // List items (for inventory page)
+    // Get items with relationships
     public function index()
     {
-        //return Item::with(['supplier', 'category', 'location'])->get();
         return Item::with(['supplier','category','location'])->paginate(10);
     }
 
-    // Add new item
+    // Create new item
     public function store(Request $request)
     {
         $request->validate([
@@ -37,31 +36,23 @@ class ItemController extends Controller
             'quantity'    => 0
         ]);
 
-        // Record transaction (item added)
+        // Log transaction
         Transaction::create([
             'item_id'       => $item->id,
             'supplier_id'   => $item->supplier_id,
             'supplier_name' => $item->supplier->supplier_name,
             'user_id'       => Auth::id(),
             'type'          => 'item_added',
-            'date'          => now()
+            'date'          => now(),
         ]);
 
-        return response()->json(['message' => 'Item added successfully', 'item' => $item]);
+        return response()->json(['message' => 'Item successfully added', 'item' => $item]);
     }
 
     // Update item
     public function update(Request $request, $id)
     {
         $item = Item::findOrFail($id);
-
-        $request->validate([
-            'item_name'   => 'sometimes|required|string',
-            'item_code'   => 'sometimes|nullable|string',
-            'supplier_id' => 'sometimes|required|exists:suppliers,id',
-            'category_id' => 'sometimes|required|exists:categories,id',
-            'location_id' => 'sometimes|required|exists:locations,id',
-        ]);
 
         $item->update($request->only([
             'item_name','item_code','supplier_id','category_id','location_id','quantity'
@@ -73,10 +64,10 @@ class ItemController extends Controller
             'supplier_name' => optional($item->supplier)->supplier_name,
             'user_id'       => Auth::id(),
             'type'          => 'item_edited',
-            'date'          => now()
+            'date'          => now(),
         ]);
 
-        return response()->json(['message' => 'Item updated successfully', 'item' => $item]);
+        return response()->json(['message' => 'Item updated successfully','item'=>$item]);
     }
 
     // Delete item
@@ -90,7 +81,7 @@ class ItemController extends Controller
             'supplier_name' => optional($item->supplier)->supplier_name,
             'user_id'       => Auth::id(),
             'type'          => 'item_deleted',
-            'date'          => now()
+            'date'          => now(),
         ]);
 
         $item->delete();
@@ -98,42 +89,53 @@ class ItemController extends Controller
         return response()->json(['message' => 'Item deleted successfully']);
     }
 
-    // STOCK IN (integrated into ItemController)
+    // Stock In — also adds supplier record
     public function stockIn(Request $request, $id)
     {
-        $request->validate([
-            'quantity' => 'required|integer|min:1'
-        ]);
+         $request->validate([
+        'quantity' => 'required|integer|min:1'
+         ]);
 
         $item = Item::findOrFail($id);
+        $supplier = $item->supplier;
+        
+        if(!$supplier->cost_per_unit){
+        return response()->json(['message' => 'Supplier has no cost per unit. Please set price first.'], 400);
+        }
 
-        // Update quantity
-        $item->quantity += (int)$request->quantity;
+
+        // compute total cost
+        $totalCost = $request->quantity * ($supplier->cost_per_unit ?? 0);
+
+        // update inventory quantity
+        $item->quantity += $request->quantity;
         $item->save();
 
-        // Add supplier record (delivery)
+        // save supplier record
         SupplierRecord::create([
-            'supplier_id'       => $item->supplier_id,
+            'supplier_id'       => $supplier->id,
             'item_id'           => $item->id,
             'quantity_supplied' => $request->quantity,
+            'cost_per_unit'     => $supplier->cost_per_unit, // snapshot
+            'total_cost'        => $totalCost,
             'date'              => now()
         ]);
 
-        // Add transaction
+        // create transaction
         Transaction::create([
             'item_id'       => $item->id,
-            'supplier_id'   => $item->supplier_id,
-            'supplier_name' => optional($item->supplier)->supplier_name,
+            'supplier_id'   => $supplier->id,
+            'supplier_name' => $supplier->supplier_name,
             'user_id'       => Auth::id(),
             'type'          => 'stock_in',
             'quantity'      => $request->quantity,
             'date'          => now()
         ]);
 
-        return response()->json(['message' => 'Stock in successful', 'item' => $item]);
+    return response()->json(['message' => 'Stock in successful', 'item' => $item]);
     }
 
-    // STOCK OUT (integrated into ItemController)
+    // Stock Out — requires a reason
     public function stockOut(Request $request, $id)
     {
         $request->validate([
@@ -143,14 +145,13 @@ class ItemController extends Controller
 
         $item = Item::findOrFail($id);
 
-        if ($item->quantity < $request->quantity) {
-            return response()->json(['message' => 'Not enough stock'], 400);
+        if($item->quantity < $request->quantity){
+            return response()->json(['message'=>'Insufficient stock'],400);
         }
 
-        $item->quantity -= (int)$request->quantity;
+        $item->quantity -= $request->quantity;
         $item->save();
 
-        // Add transaction
         Transaction::create([
             'item_id'       => $item->id,
             'supplier_id'   => $item->supplier_id,
@@ -159,9 +160,9 @@ class ItemController extends Controller
             'type'          => 'stock_out',
             'quantity'      => $request->quantity,
             'purpose'       => $request->purpose,
-            'date'          => now()
+            'date'          => now(),
         ]);
 
-        return response()->json(['message' => 'Stock out successful', 'item' => $item]);
+        return response()->json(['message'=>'Stock out successful','item'=>$item]);
     }
 }

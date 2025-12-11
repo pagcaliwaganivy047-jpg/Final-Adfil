@@ -14,7 +14,7 @@ return new class extends Migration {
 
             // Handled by (supplier)
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
-            $table->string('supplier_name'); // <-- ADDED THIS
+            $table->string('supplier_name')->nullable(); // <-- ADDED THIS
 
             // System user (optional, for internal audit trail)
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();

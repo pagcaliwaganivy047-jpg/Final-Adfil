@@ -13,8 +13,13 @@ class SupplierRecord extends Model
         'supplier_id',
         'item_id',
         'quantity_supplied',
+        'cost_per_unit',   // store historical cost!
+        'total_cost',  // ADDED
+
         'date'
     ];
+
+    // protected $appends = ['total_cost']; // Auto-show in API JSON
 
     public function supplier()
     {
@@ -25,4 +30,10 @@ class SupplierRecord extends Model
     {
         return $this->belongsTo(Item::class);
     }
+
+    // Auto computed total cost (quantity * supplier.cost_per_unit)
+    // public function getTotalCostAttribute()
+    // {
+    //     return $this->quantity_supplied * ($this->supplier->cost_per_unit ?? 0);
+    // }
 }

@@ -8,15 +8,17 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('supplier_records', function (Blueprint $table) {
-            $table->id();
+        $table->id();
 
-            $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
-            $table->foreignId('item_id')->constrained('items')->onDelete('cascade');
+        $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
+        $table->foreignId('item_id')->constrained('items')->onDelete('cascade');
 
-            $table->integer('quantity_supplied');
-            $table->timestamp('date')->useCurrent();
+        $table->integer('quantity_supplied');
+        $table->decimal('total_cost',10,2)->nullable(); // <— new
+        $table->decimal('cost_per_unit',10,2); // <— new
 
-            $table->timestamps();
+        $table->timestamp('date')->useCurrent();
+        $table->timestamps();
         });
     }
 

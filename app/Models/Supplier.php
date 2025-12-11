@@ -12,7 +12,9 @@ class Supplier extends Model
     protected $fillable = [
         'supplier_name',
         'contact',
-        'email'
+        'email',
+        'item_supplied',
+        'cost_per_unit', // <— new
     ];
 
     // Supplier supplies many items

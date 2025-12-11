@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->string('item_name');
             $table->string('item_code')->nullable();
 
-            $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->foreignId('location_id')->constrained('locations')->onDelete('cascade');
 

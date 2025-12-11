@@ -53,9 +53,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']); 
 
     // ----------------- TRANSACTIONS -----------------
-    Route::get('/transactions', [TransactionController::class, 'index']);     
+    Route::get('/transactions', [TransactionController::class, 'index']);    
+    Route::post('/transactions', [TransactionController::class, 'store']); //incase
+ 
 
     // ----------------- SUPPLIER RECORDS -----------------
     Route::get('/supplier-records', [SupplierRecordController::class, 'index']);
+    Route::post('/supplier-records', [SupplierRecordController::class, 'store']);
+
+    Route::get('/suppliers/{id}/records', [SupplierRecordController::class, 'recordsBySupplier']);
+
+
+    //for dashboard??
+    Route::get('/items/{id}', [ItemController::class, 'show']);
+    Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    Route::get('/supplier-records/{id}', [SupplierRecordController::class, 'show']);
+
+
+
 
 });
