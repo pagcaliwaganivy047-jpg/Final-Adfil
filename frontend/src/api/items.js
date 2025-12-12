@@ -1,0 +1,11 @@
+// src/api/items.js
+import api from "./api";
+
+export const getItems = () => api.get("/items");
+export const getItem = id => api.get(`/items/${id}`);
+export const createItem = data => api.post("/items", data);
+export const updateItem = (id, data) => api.put(`/items/${id}`, data);
+export const deleteItem = id => api.delete(`/items/${id}`);
+
+export const stockIn = (id, data) => api.post(`/items/${id}/stock-in`, data);
+export const stockOut = (id, data) => api.post(`/items/${id}/stock-out`, data);
